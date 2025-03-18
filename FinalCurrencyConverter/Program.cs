@@ -46,7 +46,7 @@ namespace FinalCurrencyConverter
             Console.Write("Pick a Username of your choice: ");
             string username = Console.ReadLine();
 
-            Console.Write("Username saved, now create a password: ");
+            Console.Write("Username created, now create a password: ");
             string password = Console.ReadLine();
 
             string hashedPassword = HashPassword(password);
@@ -54,7 +54,7 @@ namespace FinalCurrencyConverter
             if (!userDatabase.ContainsKey(username))
             {
                 userDatabase.Add(username, hashedPassword);
-                Console.WriteLine("Account created successfully, you can now login.");
+                Console.WriteLine("Account created successfully, Welcome " + username + "!");
                 Console.WriteLine("Username: " + username);
             }
             else
