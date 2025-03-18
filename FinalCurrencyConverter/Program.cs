@@ -66,29 +66,47 @@ namespace FinalCurrencyConverter
         // Step 3: Login with password verification
         static void LoginUser()
         {
-            Console.WriteLine("Proceeding to login...");
-            Console.Write("Enter your Username: ");
-            string username = Console.ReadLine();
-            Console.Write("Enter your Password: ");
-            string password = Console.ReadLine();
-
-            if (userDatabase.ContainsKey(username))
+            bool loggedIn = false;
+            while (!loggedIn)
             {
-                string hashedPassword = HashPassword(password);
-                if (userDatabase[username] == hashedPassword)
+                Console.Write("Enter your Username: ");
+                string username = Console.ReadLine();
+                Console.Write("Enter your Password: ");
+                string password = Console.ReadLine();
+
+                // Check if the username exists
+                if (userDatabase.ContainsKey(username))
                 {
-                    Console.WriteLine("Login successful!");
-                    // Proceed to currency conversion
-                    CurrencyConversion().Wait(); // Wait because CurrencyConversion is async.
+                    string hashedPassword = HashPassword(password);
+                    // Check if the password is correct
+                    if (userDatabase[username] == hashedPassword)
+                    {
+                        Console.WriteLine("Login successful!");
+                        loggedIn = true;
+                        // Proceed to currency conversion after successful login.
+                        CurrencyConversion().Wait(); // Wait because CurrencyConversion is async.
+                    }
+                    else
+                    {
+                        Console.WriteLine("Incorrect password. Please try again.\n");
+                    }
                 }
                 else
                 {
-                    Console.WriteLine("Incorrect password. Please try a correct password again.");
+                    Console.WriteLine("No account can be found with that username. Please try again or register an account.\n");
                 }
-            }
-            else
-            {
-                Console.WriteLine("Username does not exist. Kindly create an account first, then try logging in again.");
+
+                // here, I'm asking if the user wants to exit the login loop,or try again
+                if (!loggedIn)
+                {
+                    Console.WriteLine("Would you like to try logging in again? (Y/N)");
+                    string retry = Console.ReadLine();
+                    if (retry.Equals("N", StringComparison.OrdinalIgnoreCase))
+                    {
+                        break;
+                    }
+                }
+                
             }
         }
 
