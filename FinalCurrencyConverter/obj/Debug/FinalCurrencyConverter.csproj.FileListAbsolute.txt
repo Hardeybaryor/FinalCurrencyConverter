@@ -1,0 +1,10 @@
+C:\C# Project\FinalCurrencyConverter\FinalCurrencyConverter\obj\Debug\FinalCurrencyConverter.csproj.AssemblyReference.cache
+C:\C# Project\FinalCurrencyConverter\FinalCurrencyConverter\obj\Debug\FinalCurrencyConverter.csproj.CoreCompileInputs.cache
+C:\C# Project\FinalCurrencyConverter\FinalCurrencyConverter\bin\Debug\FinalCurrencyConverter.exe.config
+C:\C# Project\FinalCurrencyConverter\FinalCurrencyConverter\bin\Debug\FinalCurrencyConverter.exe
+C:\C# Project\FinalCurrencyConverter\FinalCurrencyConverter\bin\Debug\FinalCurrencyConverter.pdb
+C:\C# Project\FinalCurrencyConverter\FinalCurrencyConverter\bin\Debug\Newtonsoft.Json.dll
+C:\C# Project\FinalCurrencyConverter\FinalCurrencyConverter\bin\Debug\Newtonsoft.Json.xml
+C:\C# Project\FinalCurrencyConverter\FinalCurrencyConverter\obj\Debug\FinalCur.97D3A734.Up2Date
+C:\C# Project\FinalCurrencyConverter\FinalCurrencyConverter\obj\Debug\FinalCurrencyConverter.exe
+C:\C# Project\FinalCurrencyConverter\FinalCurrencyConverter\obj\Debug\FinalCurrencyConverter.pdb
