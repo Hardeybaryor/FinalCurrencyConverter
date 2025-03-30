@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Net.Http;
@@ -9,112 +11,189 @@ using Newtonsoft.Json.Linq;
 
 namespace FinalCurrencyConverter
 {
+    //A user with a username and hashed password
+    class User
+    {
+        public string Username { get; set; }
+        public string HashedPassword { get; set; }
+    }
+
+    //Registration and Login reading on a CSV file
+    class UserDatabase
+    {
+        private readonly string csvFile;
+
+        public UserDatabase(string csvFilePath = "users.csv")
+        {
+            csvFile = csvFilePath;
+            if (!File.Exists(csvFile))
+            {
+                File.WriteAllText(csvFile, "Username,HashedPassword\n");
+            }
+        }
+
+        public void Register()
+        {
+            Console.WriteLine("Proceeding to account creation...");
+            string username = GetUniqueUsername();
+            string password = GetValidPassword(username);
+
+            string hashedPassword = HashPassword(password);
+            File.AppendAllText(csvFile, $"{username},{hashedPassword}\n");
+            Console.WriteLine("Account created successfully, Welcome " + username + "!");
+        }
+
+        public bool Login(string username, string password)
+        {
+            string hashedPassword = HashPassword(password);
+            return File.ReadLines(csvFile).Skip(1).Any(line => line.Split(',')[0] == username && line.Split(',')[1] == hashedPassword);
+        }
+
+        public bool UserExists(string username)
+        {
+            return File.ReadLines(csvFile).Skip(1).Any(line => line.Split(',')[0] == username);
+        }
+
+        private string HashPassword(string password)
+        {
+            byte[] data = Encoding.UTF8.GetBytes(password);
+            using (var sha256 = SHA256.Create())
+            {
+                byte[] hash = sha256.ComputeHash(data);
+                return BitConverter.ToString(hash).Replace("-", string.Empty);
+            }
+        }
+
+        private string GetUniqueUsername()
+        {
+            while (true)
+            {
+                Console.Write("Pick a Username of your choice: ");
+                string username = Console.ReadLine();
+
+                if (UserExists(username))
+                {
+                    Console.WriteLine("Username already exists.");
+                    Console.WriteLine("Press 1 to log in, or 2 to choose a different username:");
+                    string choice = Console.ReadLine();
+                    if (choice == "1")
+                    {
+                        return null;
+                    }
+                    else if (choice == "2")
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Invalid choice. Please try again.");
+                        continue;
+                    }
+                }
+                return username;
+            }
+        }
+
+        private string GetValidPassword(string username)
+        {
+            while (true)
+            {
+                Console.Write("Now create a password: ");
+                string password = Console.ReadLine();
+                if (password == username)
+                {
+                    Console.WriteLine("Password cannot be the same as the username. Please choose a different password.");
+                }
+                else
+                {
+                    return password;
+                }
+            }
+        }
+    }
+
     class Program
     {
-        // Step 1: Store user data in an in-memory database (for demonstration purposes)
-        static Dictionary<string, string> userDatabase = new Dictionary<string, string>();
         static void Main(string[] args)
         {
             Console.WriteLine("Hello, Welcome to CashIt! Currency Converter");
             Console.WriteLine("You need to Login or Create an account.");
             Console.WriteLine("To login press 1, to create an account press 2");
-
             string userChoice = Console.ReadLine();
             while (userChoice != "1" && userChoice != "2")
             {
                 Console.WriteLine("Wrong input, kindly enter the right response");
                 userChoice = Console.ReadLine();
             }
-
+            UserDatabase userDatabase = new UserDatabase();
             if (userChoice == "1")
             {
-                LoginUser();
+                LoginUser(userDatabase);
             }
             else if (userChoice == "2")
             {
-                RegisterUser();
-                // Option to login after registration, Tell the user to log in.
-                LoginUser();
+                userDatabase.Register();
+                LoginUser(userDatabase);
             }
         }
 
-
-        // Step 2: Registration with password hashing
-        static void RegisterUser()
-        {
-            Console.WriteLine("Proceeding to account creation...");
-            Console.Write("Pick a Username of your choice: ");
-            string username = Console.ReadLine();
-
-            Console.Write("Username created, now create a password: ");
-            string password = Console.ReadLine();
-
-            string hashedPassword = HashPassword(password);
-
-            if (!userDatabase.ContainsKey(username))
-            {
-                userDatabase.Add(username, hashedPassword);
-                Console.WriteLine("Account created successfully, Welcome " + username + "!");
-                Console.WriteLine("Username: " + username);
-            }
-            else
-            {
-                Console.WriteLine("Username already exists. Please try logging in or choose a different username.");
-            }
-        }
-
-        // Step 3: Login with password verification
-        static void LoginUser()
+        static void LoginUser(UserDatabase userDatabase)
         {
             bool loggedIn = false;
             while (!loggedIn)
             {
                 Console.Write("Enter your Username: ");
                 string username = Console.ReadLine();
-                Console.Write("Enter your Password: ");
-                string password = Console.ReadLine();
-
-                // Check if the username exists
-                if (userDatabase.ContainsKey(username))
+                if (!userDatabase.UserExists(username))
                 {
-                    string hashedPassword = HashPassword(password);
-                    // Check if the password is correct
-                    if (userDatabase[username] == hashedPassword)
+                    Console.WriteLine("Sorry, username does not exist. Create an account by pressing Y for Yes or N to end? (Y/N)");
+                    string answer = Console.ReadLine();
+                    if (answer.Equals("Y", StringComparison.OrdinalIgnoreCase))
                     {
-                        Console.WriteLine("Login successful!");
-                        loggedIn = true;
-                        // Proceed to currency conversion after successful login.
-                        CurrencyConversion().Wait(); // Wait because CurrencyConversion is async.
+                        userDatabase.Register();
+                        continue;
                     }
                     else
-                    {
-                        Console.WriteLine("Incorrect password. Please try again.\n");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("No account can be found with that username. Please try again or register an account.\n");
-                }
-
-                // here, I'm asking if the user wants to exit the login loop,or try again
-                if (!loggedIn)
-                {
-                    Console.WriteLine("Would you like to try logging in again? (Y/N)");
-                    string retry = Console.ReadLine();
-                    if (retry.Equals("N", StringComparison.OrdinalIgnoreCase))
                     {
                         break;
                     }
                 }
-                
+
+                Console.Write("Enter your Password: ");
+                string password = Console.ReadLine();
+                if (userDatabase.Login(username, password))
+                {
+                    Console.WriteLine("Login successful!");
+                    loggedIn = true;
+                    CurrencyConversion().Wait();
+                }
+                else
+                {
+                    Console.WriteLine("Incorrect username or password. Please try again.\n");
+                }
+
+                if (!loggedIn && !RetryLogin())
+                {
+                    break;
+                }
             }
         }
 
-        // Step 4: Currency conversion prompt
+        static bool RetryLogin()
+        {
+            Console.WriteLine("Would you like to try again? Press Y for Yes or N for No");
+            string answer = Console.ReadLine();
+            return answer.Equals("Y", StringComparison.OrdinalIgnoreCase);
+        }
+
         static async Task CurrencyConversion()
         {
             Console.Write("Enter amount to convert: ");
-            decimal amount = decimal.Parse(Console.ReadLine());
+            if (!decimal.TryParse(Console.ReadLine(), out decimal amount))
+            {
+                Console.WriteLine("Invalid amount. Please enter a valid number.");
+                return;
+            }
 
             Console.Write("Enter base currency code (e.g. USD): ");
             string baseCurrency = Console.ReadLine().ToUpper();
@@ -122,19 +201,20 @@ namespace FinalCurrencyConverter
             Console.Write("Enter target currency code (e.g. EUR): ");
             string targetCurrency = Console.ReadLine().ToUpper();
 
-            // Step 5: Get live exchange rate from an API
             decimal exchangeRate = await GetExchangeRate(baseCurrency, targetCurrency);
+            if (exchangeRate == 0)
+            {
+                Console.WriteLine("Failed to retrieve exchange rate.");
+                return;
+            }
 
             decimal convertedAmount = amount * exchangeRate;
             Console.WriteLine($"{amount} {baseCurrency} is equivalent to {convertedAmount} {targetCurrency}");
         }
 
-        // Live exchange rate API call
         static async Task<decimal> GetExchangeRate(string baseCurrency, string targetCurrency)
         {
-            // Replace YOUR_API_KEY with your actual API key and adjust the URL as needed.
             string url = $"https://api.exchangerate-api.com/v4/latest/{baseCurrency}";
-
             using (HttpClient client = new HttpClient())
             {
                 var response = await client.GetAsync(url);
@@ -142,25 +222,13 @@ namespace FinalCurrencyConverter
                 {
                     var jsonString = await response.Content.ReadAsStringAsync();
                     var json = JObject.Parse(jsonString);
-                    decimal rate = json["rates"][targetCurrency].Value<decimal>();
-                    return rate;
+                    if (json["rates"]?[targetCurrency] != null)
+                    {
+                        return json["rates"][targetCurrency].Value<decimal>();
+                    }
                 }
-                else
-                {
-                    Console.WriteLine("Error retrieving exchange rate.");
-                    return 0;
-                }
-            }
-        }
-
-        // Password hashing
-        static string HashPassword(string password)
-        {
-            byte[] data = Encoding.UTF8.GetBytes(password);
-            using (var sha256 = System.Security.Cryptography.SHA256.Create())
-            {
-                byte[] hash = sha256.ComputeHash(data);
-                return BitConverter.ToString(hash).Replace("-", string.Empty);
+                Console.WriteLine("Error retrieving exchange rate.");
+                return 0;
             }
         }
     }
